@@ -82,6 +82,8 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
     const twoVictory = new Array(n).fill(2);
 
     let activePlayer = players[0];
+    let winner = null;
+    let tiedGame = false;
 
     const switchPlayerTurn = () => {
         activePlayer = (activePlayer === players[0]) ? players[1] : players[0];
@@ -94,27 +96,8 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
         console.log(`${getActivePlayer().name}'s turn.`);
     };
 
-    const printFinalBoard = () => {
-        board.printBoard();
-    }
-
-    // declare winner or draw in console. Return true if winner or draw, false ow
-    const declareWinner = () => {
-        let full = getTie();
-        let winner = getWinner();
-        
-        if (winner !== null) { 
-            console.log(`${winner.name} wins!.`);
-            return true;
-        } else if (full) {
-            console.log("Tied game, as board is full.");
-            return true;
-        }
-        return false;
-    };
-
-    // Returns name of winner or null if none
-    const getWinner = () => {
+    // update winner to winning player or null if none
+    const setWinner = () => {
         let threeCell = new Set();
         // get rows
         for (const row of board.getBoard()) {
@@ -147,30 +130,36 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
 
         try { if (unoWin && dosWin) { throw new Error("Can't have both players win"); } } catch (error) { console.error(`Error: ${error.message}`); }
 
-        if (unoWin) { return players[0]; }
-        if (dosWin) { return players[1]; }
-
-        return null;
+        if (unoWin) { 
+            winner = players[0]; 
+        } else if (dosWin) { 
+            winner = players[1]; 
+        } else {
+            winner = null;
+        }
     };
 
-    const getTie = () => {
+    // Return status of tied game or not
+    const setTie = () => {
+        tiedGame = true;
         for (const row of board.getBoard()) {
             for (const cell of row) {
-                if (cell.getValue() === 0) { return false; }
+                if (cell.getValue() === 0) { 
+                    tiedGame = false;
+                }
             }
         } 
-        return true;
     }
+
+    const getWinner = () => winner === null ? null : winner.name;
+
+    const getTie = () => tiedGame;
 
     const playRound = (r, c) => {
         board.placeToken(r, c, getActivePlayer().token); // TODO fix skip your turn on selecting filled tile
 
-        /*  This is where we would check for a winner and handle that logic,
-        such as a win message. */
-        if (declareWinner()) { 
-            printFinalBoard();
-            return; 
-        }
+        setTie();
+        setWinner();
 
         // Switch player turn
         switchPlayerTurn();
@@ -185,7 +174,9 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
     return {
         playRound,
         getActivePlayer,
-        getBoard: board.getBoard
+        getBoard: board.getBoard,
+        getWinner, 
+        getTie
     };
 }
 
@@ -193,10 +184,13 @@ function ScreenController() {
     const game = GameController();
     const playerTurnDiv = document.querySelector('.turn');
     const boardDiv = document.querySelector('.board');
+    const endgameDiv = document.querySelector('.endgame')
 
     const updateScreen = () => {
         // clear the board
         boardDiv.textContent = "";
+        // clear endgame state
+        endgameDiv.textContent = "";
 
         // get the newest version of the board and player turn
 
@@ -220,7 +214,22 @@ function ScreenController() {
                 boardDiv.appendChild(cellButton);
             })
         })
+
+        // end screen message if win or tie
+        updateEndgame();
     };
+
+    const updateEndgame = () => {
+        let winner = game.getWinner();
+        let tiedGame = game.getTie();
+        if (winner !== null) {
+            endgameDiv.textContent = `${winner} has won the game!`;
+            boardDiv.removeEventListener("click", clickHandlerBoard);
+        } else if (tiedGame === true) {
+            endgameDiv.textContent = `Tied game.`;
+            boardDiv.removeEventListener("click", clickHandlerBoard);
+        }
+    }
 
     function clickHandlerBoard(e) {
         const selectedRow = e.target.dataset.row;

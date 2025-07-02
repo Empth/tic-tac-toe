@@ -30,3 +30,8 @@ body {
     color: white;
     cursor: pointer;
 }
+
+.endgame {
+    font-size: 28px;
+    font-weight: bold;
+}
