@@ -184,8 +184,60 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
     // getActivePlayer for the UI version, so I'm revealing it now
     return {
         playRound,
-        getActivePlayer
+        getActivePlayer,
+        getBoard: board.getBoard
     };
 }
 
-const game = GameController();
+function ScreenController() {
+    const game = GameController();
+    const playerTurnDiv = document.querySelector('.turn');
+    const boardDiv = document.querySelector('.board');
+
+    const updateScreen = () => {
+        // clear the board
+        boardDiv.textContent = "";
+
+        // get the newest version of the board and player turn
+
+        const board = game.getBoard();
+        const activePlayer = game.getActivePlayer();
+
+        // Display player's turn
+        playerTurnDiv.textContent = `${activePlayer.name}'s turn...`
+
+        // Render board squares
+        board.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                // anything clickable should be a button!
+                const cellButton = document.createElement("button");
+                cellButton.classList.add("cell");
+                // Create a data attribute to identify the row, column cell index
+                // This makes it easier to pass into our `playRound` function
+                cellButton.dataset.row = rowIndex;
+                cellButton.dataset.column = colIndex;
+                cellButton.textContent = cell.getValue();
+                boardDiv.appendChild(cellButton);
+            })
+        })
+    };
+
+    function clickHandlerBoard(e) {
+        const selectedRow = e.target.dataset.row;
+        const selectedColumn = e.target.dataset.column;
+        // Make sure I've clicked a column and not the gaps in between
+        if (!selectedRow || !selectedColumn) return;
+        game.playRound(selectedRow, selectedColumn);
+        updateScreen();
+    }
+
+    boardDiv.addEventListener("click", clickHandlerBoard);
+
+    // Initial render
+    updateScreen();
+
+    // We don't need to return anything from this module because everything is encapsulated inside this screen controller.
+
+}
+
+ScreenController();
