@@ -37,6 +37,8 @@ function Gameboard(row, col) {
         board[r][c].addToken(playerToken);
     };
 
+    const positionFree = (r, c) => board[r][c].getValue() === 0;
+
     // This method will be used to print our board to the console.
     // It is helpful to see what the board looks like after each turn as we play,
     // but we won't need it after we build our UI
@@ -47,7 +49,7 @@ function Gameboard(row, col) {
 
     // Here, we provide an interface for the rest of our
     // application to interact with the board
-    return { getBoard, placeToken, printBoard };
+    return { getBoard, placeToken, printBoard, positionFree };
 }
 
 /*
@@ -73,7 +75,7 @@ function Cell() {
 ** anybody has won the game.
 */
 
-function GameController(playerOneName = "Player One (X)", playerTwoName = "Player Two (O)") {
+function GameController(playerOneName = "Player One - X", playerTwoName = "Player Two - O") {
 
     const n = 3
     const board = Gameboard(n, n);
@@ -156,6 +158,9 @@ function GameController(playerOneName = "Player One (X)", playerTwoName = "Playe
     const getTie = () => tiedGame;
 
     const playRound = (r, c) => {
+
+        if (!board.positionFree(r, c)) { return; }
+
         board.placeToken(r, c, getActivePlayer().token); // TODO fix skip your turn on selecting filled tile
 
         setTie();
@@ -185,6 +190,8 @@ function ScreenController() {
     const playerTurnDiv = document.querySelector('.turn');
     const boardDiv = document.querySelector('.board');
     const endgameDiv = document.querySelector('.endgame')
+    const iconMap = {0: "", 1: "X", 2: "O"}
+    const tupleBlacklist = new Set() // blacklist of [r, c] tuples selected
 
     const updateScreen = () => {
         // clear the board
@@ -210,7 +217,7 @@ function ScreenController() {
                 // This makes it easier to pass into our `playRound` function
                 cellButton.dataset.row = rowIndex;
                 cellButton.dataset.column = colIndex;
-                cellButton.textContent = cell.getValue();
+                cellButton.textContent = iconMap[cell.getValue()];
                 boardDiv.appendChild(cellButton);
             })
         })
@@ -237,6 +244,7 @@ function ScreenController() {
         // Make sure I've clicked a column and not the gaps in between
         if (!selectedRow || !selectedColumn) return;
         game.playRound(selectedRow, selectedColumn);
+
         updateScreen();
     }
 
